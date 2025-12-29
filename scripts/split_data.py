@@ -1,10 +1,10 @@
-import json
 import os
 
-# 配置路径
-current_dir = os.path.dirname(os.path.abspath(__file__))
-train_file = os.path.join(current_dir, 'data', 'LCSTS_origin', 'train.jsonl')
-my_test_file = os.path.join(current_dir, 'data', 'LCSTS_origin', 'my_test.jsonl')
+# 配置参数
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+train_file = os.path.join(project_root, 'data', 'LCSTS_origin', 'train.jsonl')
+my_test_file = os.path.join(project_root, 'data', 'LCSTS_origin', 'my_test.jsonl')
 
 print("正在切分数据...")
 lines = []

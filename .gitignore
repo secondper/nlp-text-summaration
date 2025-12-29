@@ -1,24 +1,20 @@
-# 1. 忽略 Python 编译文件
+# .gradio
+.gradio/
+# checkpoint
+checkpoint/
+# data
+data/
+# results
+results/*
+!results/README.md
+# temp
+temp/
+# model_weights
+model_weights/
+# __pycache__
 __pycache__/
 *.py[cod]
 
-# 2. 忽略 IDE 配置文件 (Pycharm/VSCode)
-.idea/
 .vscode/
-.gradio/
 
-# 3. 忽略数据集 (大文件不要传)
-data/
-# 如果 data 目录下有少量示例数据想要上传，可以用 !data/example.json 例外规则
-
-# 4. 忽略模型权重 (绝对不能传，太大了)
-checkpoint/
-*.bin
-*.pt
-*.pth
-*.h5
-model/  # 训练产生的日志结果也可以忽略，或者只挑重要的传
-
-# 5. 忽略环境文件夹
-venv/
-env/
+# 不忽略

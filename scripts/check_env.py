@@ -18,7 +18,6 @@ else:
 print("-" * 30)
 
 if bert4torch_installed:
-    # 很多库不一定有 __version__ 属性，只要 import 不报错就是装好了
     print("bert4torch:      Installed Successfully (安装成功)")
 else:
     print("bert4torch:      Not Found (未安装)")

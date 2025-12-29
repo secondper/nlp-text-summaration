@@ -1,17 +1,21 @@
 import os
 from huggingface_hub import snapshot_download
 
+# 配置参数
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+
 def download_bart_model():
     """
     下载 LCSTS 数据集到 checkpoint 目录
     """
     repo_id = "OpenMOSS-Team/bart-base-chinese" # 模型 ID
-    local_dir = "./checkpoint" # 保存路径
+    local_dir = os.path.join(project_root, "checkpoint") # 保存路径
 
     print(f"正在准备下载模型: {repo_id} ...")
-    print(f"目标目录: {os.path.abspath(local_dir)}")
+    print(f"目标目录: {local_dir}")
 
-    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+    # os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
     try:
         snapshot_download(
