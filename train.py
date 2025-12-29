@@ -31,7 +31,7 @@ maxlen = 512 # 原文最大长度
 max_target_len = 128 # 摘要最大长度
 batch_size = 32
 epochs = 10
-learning_rate = 2e-5
+learning_rate = 5e-5
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 seed_everything(42)
@@ -129,7 +129,7 @@ criterion = nn.CrossEntropyLoss(ignore_index=0)
 total_steps = len(train_dataloader) * epochs
 
 # 2. 设定预热步数 (Warmup Steps)
-warmup_steps = int(total_steps * 0.01)
+warmup_steps = int(total_steps * 0.05)
 
 # 3. 创建调度器
 scheduler = get_linear_schedule_with_warmup(
@@ -300,7 +300,18 @@ def train():
         # 运行评估
         scores = evaluate(valid_dataset)
         
+        # 写入json文件
         if scores:
+            results_path = os.path.join(current_dir, 'result', 'results.jsonl')
+            with open(results_path, 'a', encoding='utf-8') as f:
+                result_record = {
+                    'epoch': epoch + 1,
+                    'loss': avg_loss,
+                    'rouge-1': scores['rouge-1'],
+                    'rouge-2': scores['rouge-2'],
+                    'rouge-l': scores['rouge-l'],
+                }
+                f.write(json.dumps(result_record, ensure_ascii=False) + '\n')
             print(f"📊 Epoch {epoch+1} 验证集得分:")
             print(f"   ROUGE-1: {scores['rouge-1']['f'] * 100:.2f}")
             print(f"   ROUGE-2: {scores['rouge-2']['f'] * 100:.2f}")

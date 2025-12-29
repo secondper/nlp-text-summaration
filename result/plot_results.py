@@ -1,17 +1,38 @@
 import matplotlib.pyplot as plt
-import numpy as np
+import json
+import os
 
-# ================= 1. 这里填入你控制台打印的数据 =================
-epochs = [1, 2, 3, 4, 5]
+# 指定结果文件路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+result_file_path = os.path.join(current_dir, 'results.jsonl')
 
-# 填入每轮的 "平均 Loss"
-losses = [4.56, 2.98, 2.39, 1.96, 1.60] 
+# 读取训练结果数据
+def read_results(file_path):
+    epochs = []
+    losses = []
+    rouge_1 = []
+    rouge_2 = []
+    rouge_l = []
 
-# 填入每轮验证集的 ROUGE 分数 (如果没有跑完，只填已有的)
-rouge_1 = [30.5, 35.2, 38.4, 40.1, 41.5]
-rouge_2 = [12.1, 15.8, 18.2, 20.5, 21.8]
-rouge_l = [25.4, 30.1, 32.5, 34.8, 36.2]
-# ==============================================================
+    if not os.path.exists(file_path):
+        print(f"文件不存在：{file_path}")
+        return epochs, losses, rouge_1, rouge_2, rouge_l
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    record = json.loads(line.strip())
+                    epochs.append(record['epoch'])
+                    losses.append(record['loss'])
+                    rouge_1.append(record['rouge-1'])
+                    rouge_2.append(record['rouge-2'])
+                    rouge_l.append(record['rouge-l'])
+        print(f"成功读取文件：{file_path}")
+        return epochs, losses, rouge_1, rouge_2, rouge_l
+    except Exception as e:
+        print(f"读取文件时出错：{e}")
+
+epochs, losses, rouge_1, rouge_2, rouge_l = read_results(result_file_path)
 
 # 设置中文字体 (防止中文乱码)
 plt.rcParams['font.sans-serif'] = ['SimHei'] # Windows 自带黑体
@@ -41,10 +62,13 @@ plt.ylabel('Score (F1-Score)', fontsize=12)
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.legend()
 
+# 设置Y轴范围，让图表更好看
+plt.ylim([min(min(rouge_1), min(rouge_2), min(rouge_l)) * 0.9, 
+          max(max(rouge_1), max(rouge_2), max(rouge_l)) * 1.1])
+
 # 调整布局防止重叠
 plt.tight_layout()
 
 # 保存并显示
 plt.savefig('training_analysis.png', dpi=300) # 保存高清图用于报告
 print("✅ 图表已生成: training_analysis.png")
-plt.show()
