@@ -45,7 +45,7 @@ class SummaryDataset(Dataset):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 self.data.append(json.loads(line))
-                # 训练集只取 50000 条
+                # 训练集只取 20000 条
                 if "train.jsonl" in file_path and len(self.data) > 20000: break 
                 # 验证集只取 2000 条
                 if "valid.jsonl" in file_path and len(self.data) > 2000: break
@@ -225,8 +225,25 @@ def evaluate(dataset, limit=100):
 # 训练
 def train():
     print(f"开始训练，设备: {device}")
+
+    start_epoch = 0
+    resume_path = os.path.join(current_dir, 'model', 'latest_checkpoint.pt')
+
+    if os.path.exists(resume_path):
+        print(f"检测到断点文件：{resume_path}，正在加载...")
+        try:
+            checkpoint = torch.load(resume_path, map_location=device)
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            start_epoch = checkpoint['epoch']
+        except Exception as e:
+            print(f"加载断点失败，错误信息: {e}")
+            print("将从头开始训练。")
+    else:
+        print("未检测到断点文件，开始新训练。")
     
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         model.train()
         total_loss = 0
         progress_bar = tqdm(train_dataloader, desc=f'Epoch {epoch+1}/{epochs}')
@@ -259,16 +276,26 @@ def train():
             
             current_lr = optimizer.param_groups[0]['lr']
             total_loss += loss.item()
-            progress_bar.set_postfix(loss=total_loss/(step+1), lr=current_lr)
+            progress_bar.set_postfix(loss=loss.item(), lr=current_lr)
         
         # --- 每个 Epoch 结束后的工作 ---
         avg_loss = total_loss / len(train_dataloader)
         print(f"\nEpoch {epoch+1} 训练完成 平均 Loss: {avg_loss:.4f}")
         
         # 保存权重
-        save_path = f'model/bart_epoch_{epoch+1}.pt'
-        torch.save(model.state_dict(), save_path)
-        print(f"✅ 模型已保存: {save_path}")
+        weight_save_path = f'model/bart_epoch_{epoch+1}.pt'
+        torch.save(model.state_dict(), weight_save_path)
+        print(f"✅ 模型权重已保存: {weight_save_path}")
+
+        # 保存断点
+        checkpoint = {
+            'epoch': epoch + 1,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+        }
+        torch.save(checkpoint, resume_path)
+        print(f"断点已更新：{resume_path}")
 
         # 运行评估
         scores = evaluate(valid_dataset)
