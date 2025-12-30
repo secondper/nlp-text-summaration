@@ -5,10 +5,9 @@ checkpoint/
 # data
 data/
 # results
-results/*
-!results/README.md
-# temp
-temp/
+results/results.jsonl
+# reference
+reference/
 # model_weights
 model_weights/
 # __pycache__

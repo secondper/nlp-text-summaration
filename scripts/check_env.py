@@ -13,12 +13,12 @@ if torch.cuda.is_available():
     print(f"GPU Name:        {torch.cuda.get_device_name(0)}")
     print(f"CUDA Version:    {torch.version.cuda}")
 else:
-    print("警告: 未检测到 GPU，将使用 CPU 训练（极慢）")
+    print("no GPU detected, use CPU to train(slow)")
 
 print("-" * 30)
 
 if bert4torch_installed:
-    print("bert4torch:      Installed Successfully (安装成功)")
+    print("bert4torch:      Installed Successfully")
 else:
-    print("bert4torch:      Not Found (未安装)")
+    print("bert4torch:      Not Found")
 print("-" * 30)

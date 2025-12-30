@@ -4,7 +4,7 @@ import torch
 import gradio as gr
 from bert4torch.tokenizers import Tokenizer
 
-# 配置
+# path settings
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
@@ -16,36 +16,36 @@ checkpoint_dir = os.path.join(current_dir, 'checkpoint')
 config_path = os.path.join(checkpoint_dir, 'config.json')
 dict_path = os.path.join(checkpoint_dir, 'vocab.txt')
 
-# 定义权重路径
+# Define weight path
 weights_path = os.path.join(current_dir, 'model_weights', 'bart_epoch_10.pt')
 
-# 超参数
+# Hyperparameters
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-maxlen = 512        # 原文最大长度
-max_target_len = 128 # 生成摘要最大长度
+maxlen = 512        # Max source length
+max_target_len = 128 # Max target length
 
-print(f"正在启动网页端... 设备: {device}")
+print(f"Starting web demo... Device: {device}")
 
 def init_system():
-    """初始化分词器、模型和生成器"""
-    print("正在加载分词器...")
+    """Initialize tokenizer, model, and generator"""
+    print("Loading tokenizer...")
     tokenizer = Tokenizer(dict_path, do_lower_case=True)
 
-    print("正在构建模型结构...")
+    print("Building model structure...")
     model = get_bart_model(config_path=config_path, checkpoint_path=None, device=device)
-    print("模型构建成功！")
+    print("Model built successfully!")
 
-    print(f"正在加载微调权重: {weights_path}")
+    print(f"Loading fine-tuned weights: {weights_path}")
     if os.path.exists(weights_path):
-        # 加载权重
+        # Load weights
         state_dict = torch.load(weights_path, map_location=device)
         model.load_state_dict(state_dict)
-        model.eval() # 切换到评估模式
-        print("模型权重加载成功！")
+        model.eval() # Switch to evaluation mode
+        print("Model weights loaded successfully!")
     else:
-        print(f"警告: 找不到权重文件 {weights_path}，将使用随机初始化模型（输出将是乱码）。")
+        print(f"Warning: Weight file {weights_path} not found. Using randomly initialized model (output will be gibberish).")
 
-    # 初始化生成器 (使用 core.decoder 中的类)
+    # Initialize generator (using class from core.decoder)
     generator = ArticleSummaryDecoder(
         model=model,
         tokenizer=tokenizer,
@@ -57,16 +57,16 @@ def init_system():
     
     return generator
 
-# 全局初始化和生成器
+# Global initialization and generator
 summary_generator = init_system()
 
 def predict_fn(text):
-    """Gradio 调用的核心预测函数"""
+    """Core prediction function called by Gradio"""
     if not text or not text.strip():
         return "请输入有效的新闻文本..."
     
     try:
-        # 调用生成器的 generate 方法
+        # Call generator's generate method
         summary = summary_generator.generate(text, maxlen=maxlen, topk=4)
         return summary
     except Exception as e:
@@ -75,16 +75,16 @@ def predict_fn(text):
 def build_interface():
     with gr.Blocks(title="新闻摘要智能生成系统") as demo:
         
-        # --- 头部 ---
+        # header
         gr.Markdown("# 📰 新闻摘要智能生成系统")
         gr.Markdown("""
         本系统基于 **BART (Bidirectional and Auto-Regressive Transformers)** 架构，
         使用 🤗 [OpenMOSS-Team/bart-base-chinese](https://huggingface.co/OpenMOSS-Team/bart-base-chinese) 进行微调开发。
         """)
 
-        # --- 主体区域 (左右分栏) ---
+        # Main Area (Left/Right Columns)
         with gr.Row():
-            # 左侧：输入区
+            # Left: Input Area
             with gr.Column(scale=1):
                 input_text = gr.Textbox(
                     label="输入文本",
@@ -96,17 +96,17 @@ def build_interface():
                     clear_btn = gr.Button("🗑️ 清空内容", variant="secondary")
                     submit_btn = gr.Button("✨ 生成摘要", variant="primary")
 
-            # 右侧：输出区
+            # Right: Output Area
             with gr.Column(scale=1):
                 output_text = gr.Textbox(
                     label="生成摘要",
                     placeholder="AI 生成的结果将显示在这里...",
                     lines=6,
-                    buttons=["copy"], # 允许一键复制
-                    interactive=False      # 输出框不可编辑
+                    buttons=["copy"], # Allow one-click copy
+                    interactive=False      # Output box not editable
                 )
 
-        # --- 底部：示例区 ---
+        # Bottom: Examples Area
         gr.Markdown("### ⚡ 点击示例快速体验")
         gr.Examples(
             examples=[
@@ -119,10 +119,10 @@ def build_interface():
             inputs=input_text,
             outputs=output_text,
             fn=predict_fn,
-            cache_examples=False, # 设为 False 加快启动速度
+            cache_examples=False, # Set to False to speed up startup
         )
 
-        # --- 事件绑定 ---
+        # Event Binding
         submit_btn.click(
             fn=predict_fn, 
             inputs=input_text, 
@@ -130,21 +130,21 @@ def build_interface():
         )
         
         clear_btn.click(
-            fn=lambda: ("", ""), # 清空输入和输出
+            fn=lambda: ("", ""), # Clear input and output
             inputs=None, 
             outputs=[input_text, output_text]
         )
 
     return demo
 
-# ================= 5. 启动入口 =================
+# Startup Entry
 if __name__ == "__main__":
     demo = build_interface()
-    # allowed_paths 允许访问本地文件（如果需要展示图片等）
+    # allowed_paths allows access to local files (if needed to display images, etc.)
     demo.launch(
         server_name="127.0.0.1", 
         server_port=7860, 
         inbrowser=True,
         theme=gr.themes.Soft(),
-        share=False # 如果需要生成公网链接分享给别人，改为 True
+        share=False # Change to True if you need to generate a public link to share
     )

@@ -1,21 +1,21 @@
+import os
+import sys
 import json
+import argparse
+from tqdm import tqdm
+import numpy as np
+from rouge import Rouge
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from transformers import get_linear_schedule_with_warmup
 from bert4torch.models import build_transformer_model
 from bert4torch.tokenizers import Tokenizer
 from bert4torch.snippets import sequence_padding, ListDataset, seed_everything
 from bert4torch.generation import AutoRegressiveDecoder
-from tqdm import tqdm
-import os
-import sys
-import argparse
-import numpy as np
-from rouge import Rouge
-from transformers import get_linear_schedule_with_warmup
 
-# 配置参数
+# path setting
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 sys.path.append(project_root)
@@ -27,79 +27,79 @@ from utils.evaluate import evaluate
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="BART 模型微调训练脚本")
-    # 训练超参数
+    parser = argparse.ArgumentParser(description="BART model finetune for text summarization")
+    # training hyperparameters
     parser.add_argument('--epochs', type=int, default=15)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_workers', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=5e-5)
-    parser.add_argument('--warmup_ratio', type=float, default=0.05, help="预热步数比例")
-    # 模型参数
-    parser.add_argument('--maxlen', type=int, default=512, help="原文最大长度")
-    parser.add_argument('--max_target_len', type=int, default=128, help="摘要最大长度")
-    # 路径配置
-    parser.add_argument('--data_dir', type=str, default=os.path.join(project_root, 'data', 'LCSTS_origin'), help="训练数据路径")
-    parser.add_argument("--save_dir", type=str, default=os.path.join(project_root, 'model_weights'), help="模型权重保存路径")
-    parser.add_argument("--checkpoint_dir", type=str, default=os.path.join(project_root, 'checkpoint'), help="预训练模型文件夹路径")
-    # 其他
-    parser.add_argument("--seed", type=int, default=42, help="随机种子")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="训练设备")
-    parser.add_argument("--resume", action="store_true", help="是否从断点继续训练")
+    parser.add_argument('--warmup_ratio', type=float, default=0.05, help="warmup steps ratio")
+    # model parameters
+    parser.add_argument('--maxlen', type=int, default=512, help="max length of source text")
+    parser.add_argument('--max_target_len', type=int, default=128, help="max length of summary")
+    # path configuration
+    parser.add_argument('--data_dir', type=str, default=os.path.join(project_root, 'data', 'LCSTS_origin'), help="training data path")
+    parser.add_argument("--save_dir", type=str, default=os.path.join(project_root, 'model_weights'), help="model weights save path")
+    parser.add_argument("--checkpoint_dir", type=str, default=os.path.join(project_root, 'checkpoint'), help="pretrained model folder path")
+    # others
+    parser.add_argument("--seed", type=int, default=42, help="random seed")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="training device")
+    parser.add_argument("--resume", action="store_true", help="whether to resume training from checkpoint")
 
     return parser.parse_args()
 
-# 训练
+# training function
 def train(args):
-    # 打印当前配置
+    # print current configuration
     print("-" * 30)
-    print("实验配置：\n")
+    print("Experiment Configuration:\n")
     for arg, value in vars(args).items():
         print(f"{arg}: {value}")
     print("-" * 30)
-    # 路径
+    # path
     config_path = os.path.join(args.checkpoint_dir, 'config.json')
     checkpoint_path = os.path.join(args.checkpoint_dir, 'pytorch_model.bin')
     dict_path = os.path.join(args.checkpoint_dir, 'vocab.txt')
 
     train_data_path = os.path.join(args.data_dir, 'train.jsonl')
     valid_data_path = os.path.join(args.data_dir, 'valid.jsonl')
-    # 确保保存目录存在
+    # ensure save directory exists
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    # 设置随机种子
+    # set random seed
     seed_everything(args.seed)
-    # 分词器
+    # tokenizer
     tokenizer = Tokenizer(dict_path, do_lower_case=True)
-    # 加载数据
-    print("正在加载数据...")
+    # loading data
+    print("Loading data...")
     train_dataset = SummaryDataset(tokenizer, train_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, train_datasize=20, valid_datasize=2)
     valid_dataset = SummaryDataset(tokenizer, valid_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, train_datasize=20, valid_datasize=2)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, shuffle=True, collate_fn=collate_fn)
 
-    # 构建模型
-    print("正在加载模型...")  
+    # build model
+    print("Loading model...")  
     model = get_bart_model(config_path=config_path, checkpoint_path=checkpoint_path, device=args.device)
-    print("模型加载成功！")
+    print("Model loaded successfully!")
 
-    # 定义优化器
+    # define optimizer and loss function
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
-    # 定义损失函数 (忽略 padding 部分的 loss)
+    # define loss function (ignore padding loss)
     criterion = nn.CrossEntropyLoss(ignore_index=0)
 
-    # 定义学习率调度器
-    # 总训练步数 = 每个Epoch的步数 * 总Epoch数
+    # define learning rate scheduler
+    # total training steps = steps per epoch * total epochs
     total_steps = len(train_dataloader) * args.epochs
-    # 设定预热步数 (Warmup Steps)
+    # set warmup steps
     warmup_steps = int(total_steps * args.warmup_ratio)
-    # 创建调度器
+    # create scheduler
     scheduler = get_linear_schedule_with_warmup(
         optimizer, 
         num_warmup_steps=warmup_steps, 
         num_training_steps=total_steps
     )
 
-    # 初始化生成器
+    # initialize generator
     summary_generator = ArticleSummaryDecoder(
         model=model,
         tokenizer=tokenizer,
@@ -112,7 +112,7 @@ def train(args):
     start_epoch = 0
     resume_path = os.path.join(args.save_dir, 'latest_checkpoint.pt')
     if args.resume and os.path.exists(resume_path):
-        print(f"检测到断点文件：{resume_path}，正在加载...")
+        print(f"Detected checkpoint file: {resume_path}, loading...")
         try:
             checkpoint = torch.load(resume_path, map_location=args.device)
             model.load_state_dict(checkpoint['model_state_dict'])
@@ -120,9 +120,9 @@ def train(args):
             scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
             start_epoch = checkpoint['epoch']
         except Exception as e:
-            print(f"加载断点失败，错误信息: {e}\n 重新开始")
+            print(f"Failed to load checkpoint, error: {e}\n Restarting from scratch")
     
-    print(f"开始训练，设备: {args.device}")
+    print(f"Starting training on device: {args.device}")
 
     for epoch in range(start_epoch, args.epochs):
         model.train()
@@ -132,23 +132,23 @@ def train(args):
         for step, (batch_x, batch_y) in enumerate(progress_bar):
             batch_x, batch_y = batch_x.to(args.device).long(), batch_y.to(args.device).long()
             
-            # BART 训练输入:
-            # Encoder Input: batch_x (原文)
-            # Decoder Input: batch_y[:, :-1] (摘要去掉最后一个字)
-            # Label: batch_y[:, 1:] (摘要去掉第一个字，向后移一位)
+            # BART training inputs:
+            # Encoder Input: batch_x (original text)
+            # Decoder Input: batch_y[:, :-1] (summary without the last token)
+            # Label: batch_y[:, 1:] (summary without the first token, shifted right)
             
             optimizer.zero_grad()
             
-            # bert4torch 的 BART 调用方式：传入 list [src_ids, tgt_ids]
-            # 这里我们需要手动构造 decoder input
+            # bert4torch's BART call method: pass in list [src_ids, tgt_ids]
+            # Here we need to manually construct decoder input
             decoder_input = batch_y[:, :-1]
             labels = batch_y[:, 1:]
             
-            # 前向传播
+            # forward pass
             model_outputs = model([batch_x, decoder_input])
             logits = model_outputs[-1]
             
-            # 计算 Loss (需要把 logits 展平)
+            # calculate loss (need to flatten logits)
             loss = criterion(logits.reshape(-1, logits.shape[-1]), labels.reshape(-1))
             
             loss.backward()
@@ -159,14 +159,14 @@ def train(args):
             total_loss += loss.item()
             progress_bar.set_postfix(loss=loss.item(), lr=current_lr)
         
-        # --- 每个 Epoch 结束后的工作 ---
+        # Work to do at the end of each Epoch
         avg_loss = total_loss / len(train_dataloader)
-        print(f"\nEpoch {epoch+1} 训练完成 平均 Loss: {avg_loss:.4f}")
+        print(f"\nEpoch {epoch+1} training completed. Average Loss: {avg_loss:.4f}")
         
-        # 保存权重
+        # save weights
         torch.save(model.state_dict(), os.path.join(args.save_dir, f'bart_epoch_{epoch+1}.pt'))
 
-        # 保存断点
+        # save checkpoint
         checkpoint = {
             'epoch': epoch + 1,
             'model_state_dict': model.state_dict(),
@@ -174,15 +174,15 @@ def train(args):
             'scheduler_state_dict': scheduler.state_dict(),
         }
         torch.save(checkpoint, resume_path)
-        print(f"断点已更新：{resume_path}")
+        print(f"Checkpoint updated: {resume_path}")
 
-        # 运行评估
+        # evaluate on valid_dataset
         scores = evaluate(model, summary_generator, valid_dataset)
         
-        # 写入json文件
+        # write to json file
         if scores:
             results_path = os.path.join(project_root, 'results', 'results.jsonl')
-             # 确保 results 目录存在
+             # Ensure the results directory exists
             os.makedirs(os.path.dirname(results_path), exist_ok=True)
             with open(results_path, 'a', encoding='utf-8') as f:
                 result_record = {
@@ -193,7 +193,7 @@ def train(args):
                     'rouge-l': scores['rouge-l'],
                 }
                 f.write(json.dumps(result_record, ensure_ascii=False) + '\n')
-            print(f"Epoch {epoch+1} 验证集得分:")
+            print(f"Epoch {epoch+1} validation scores:")
             print(f"   ROUGE-1: {scores['rouge-1']['f'] * 100:.2f}")
             print(f"   ROUGE-2: {scores['rouge-2']['f'] * 100:.2f}")
             print(f"   ROUGE-L: {scores['rouge-l']['f'] * 100:.2f}")

@@ -1,23 +1,23 @@
 import os
 from huggingface_hub import snapshot_download
 
-# 配置参数
+# path settings
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 
 def download_lcsts_data():
     """
-    下载 LCSTS 数据集到 data 目录
+    download LCSTS dataset to data/
     """
     repo_id = "hugcyp/LCSTS" 
     
-    # 数据放在 data 文件夹
+    # Data is placed in the data folder
     local_dir = os.path.join(project_root, "data", "LCSTS_origin") 
     
     # os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
-    print(f"正在下载数据集: {repo_id} ...")
-    print(f"目标目录: {local_dir}")
+    print(f"Downloading dataset: {repo_id} ...")
+    print(f"Target directory: {local_dir}")
 
     try:
         snapshot_download(
@@ -28,10 +28,10 @@ def download_lcsts_data():
             allow_patterns=['*.jsonl'],
             resume_download=True
         )
-        print("\n数据集下载成功！")
+        print("\nDataset downloaded successfully!")
 
     except Exception as e:
-        print(f"\n下载失败: {e}")
+        print(f"\nDownload failed: {e}")
 
 if __name__ == "__main__":
     download_lcsts_data()

@@ -26,10 +26,12 @@ NLP-Text-Summarization/          <-- 项目根目录
 |   ├── ...
 │   ├── bart_epoch_10.pt
 │   └── latest_checkpoint.pt
+│
 ├── core/                        <-- [核心] BART 模型构建，数据处理，生成器类定义
 │   ├── dataset.py               (数据集处理类)
 │   ├── decoder.py               (生成器类)
 │   ├── model.py                 (BART 模型构建)
+│
 ├── results/                     <-- [产物] 所有的输出结果
 │   ├── results.jsonl            (训练日志)
 │   ├── test_predictions.jsonl   (测试集预测结果)
@@ -49,7 +51,7 @@ NLP-Text-Summarization/          <-- 项目根目录
 └── utils/                       <-- [核心] 工具函数
     ├── scores_compute.py        (计算rouge分数)
     ├── evaluate.py              (evaluate函数)
-    ├── plot.py                  (绘图脚本)
+    ├── plot_results.py          (绘图脚本)
     └── inference.py             (测试脚本)
 ```
 
@@ -88,7 +90,7 @@ NLP-Text-Summarization/          <-- 项目根目录
 
 8. **启动演示**：
 
-   训练结束后请修改`web_demo.py`中的权重加载路径为你想要的路径，运行`web_demo.py`即可以在网页端查看效果。
+   训练结束后请修改`web_demo.py`中的权重加载路径为你想要的路径，运行`web_demo.py`即可以在网页端查看效果。如果想直接查看效果，也可以下载 [模型权重](https://pan.ustc.edu.cn/share/index/a41c7377fcb64666a3ae) ，放到`model_weights`文件夹下，然后运行`scripts/fix_lib.py`修改源码中不兼容问题后，就可以运行`web_demo.py`在网页端查看效果了。
 
 ## 五、 实验结果
 
@@ -96,10 +98,8 @@ NLP-Text-Summarization/          <-- 项目根目录
 
 <img src=".assets/training_analysis.png" alt="训练日志" style="zoom: 33%;" />
 
-## 六、 引用说明
+## 六、 参考说明
 
-本项目参考了以下开源库：
+- BART模型介绍： [原论文](https://arxiv.org/abs/1910.13461) 以及 [一个解释](https://www.geeksforgeeks.org/artificial-intelligence/bart-model-for-text-auto-completion-in-nlp/)
 - bert4torch: https://github.com/Tongjilibo/bert4torch
 - Model: https://huggingface.co/OpenMOSS-Team/bart-base-chinese
-
-

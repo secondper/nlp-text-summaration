@@ -5,7 +5,9 @@ from bert4torch.snippets import sequence_padding
 
 class SummaryDataset(Dataset):
     """
-    文本摘要数据集
+    text summarization dataset
+    Read data file in jsonl format, each line is a json object containing 'text' and 'summary' fields.
+    Encode text using tokenizer and return token ids.
     """
     def __init__(self, tokenizer, file_path, maxlen=512, max_target_len=128, train_datasize=20000, valid_datasize=2000):
         self.tokenizer = tokenizer
@@ -18,7 +20,6 @@ class SummaryDataset(Dataset):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 self.data.append(json.loads(line))
-                # 训练集逻辑 (这里稍微写通用一点，通过参数控制更好，或者保持文件名判断)
                 if "train.jsonl" in file_path and len(self.data) > self.train_datasize: break 
                 if "valid.jsonl" in file_path and len(self.data) > self.valid_datasize: break
 

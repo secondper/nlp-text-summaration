@@ -4,23 +4,22 @@ from bert4torch.models import build_transformer_model
 
 def get_bart_model(config_path, checkpoint_path=None, device='cuda'):
     """
-    封装 BART 模型的构建逻辑
+    Encapsulate the construction logic of the BART model
     
     Args:
-        config_path (str): Hugging Face config.json 的路径
-        checkpoint_path (str, optional): 预训练权重(.bin)的路径。
-                                         如果为None，则随机初始化(用于加载微调后的权重前)。
-        device (str): 'cuda' 或 'cpu'
+        config_path (str): Path to Hugging Face config.json
+        checkpoint_path (str, optional): Path to pre-trained weights (.bin).
+        device (str): 'cuda' or 'cpu'
     
     Returns:
-        model: 构建好的 bert4torch 模型对象
+        model: Constructed bert4torch model object
     """
-    # 读取配置文件
+    # Read configuration file
     with open(config_path, 'r', encoding='utf-8') as f:
         hf_config = json.load(f)
 
-    # 参数映射 (HuggingFace -> bert4torch)
-    # 否则会出现 "missing required positional arguments" 错误
+    # Parameter mapping (HuggingFace -> bert4torch)
+    # Otherwise, "missing required positional arguments" error will occur
     bert4torch_args = {
         'model': 'bart', 
         'vocab_size': hf_config['vocab_size'],
@@ -34,8 +33,8 @@ def get_bart_model(config_path, checkpoint_path=None, device='cuda'):
         'segment_vocab_size': 0, 
     }
 
-    # 构建模型
-    # 注意：build_transformer_model 的 config_path 设为 None，因为我们通过 args 手动传参了
+    # Build model
+    # Note: config_path in build_transformer_model is set to None because we pass parameters manually via bert4torch_args
     model = build_transformer_model(
         config_path=None, 
         checkpoint_path=checkpoint_path,

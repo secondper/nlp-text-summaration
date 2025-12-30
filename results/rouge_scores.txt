@@ -1,0 +1,23 @@
+Evaluation Results (ROUGE Score)
+========================================
+[ROUGE-1 (Unigram Overlap)]:
+  - Recall:    35.99%
+  - Precision: 38.96%
+  - F1-Score:  36.41%
+--------------------
+[ROUGE-2 (Bigram Overlap)]:
+  - Recall:    22.26%
+  - Precision: 24.52%
+  - F1-Score:  22.51%
+--------------------
+[ROUGE-L (Longest Common Subsequence)]:
+  - Recall:    32.98%
+  - Precision: 35.80%
+  - F1-Score:  33.38%
+--------------------
+========================================
+
+Analysis Tips:
+ROUGE-1: Measures information coverage; higher means better keyword capture.
+ROUGE-2: Measures fluency; higher means more coherent phrases.
+ROUGE-L: Measures sentence structure similarity.

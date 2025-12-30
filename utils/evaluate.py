@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 @torch.no_grad()
 def evaluate(model, summary_generator, dataset, limit=100):
-    print(f"正在进行 ROUGE 评估 (采样 {limit} 条)...")
+    print(f" ROUGE evaluation (sampling {limit} items)...")
     rouge = Rouge()
     preds, refs = [], []
     model.eval()
