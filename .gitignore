@@ -6,8 +6,8 @@ checkpoint/
 data/
 # results
 results/results.jsonl
-# reference
-reference/
+# other
+other/
 # model_weights
 model_weights/
 # __pycache__

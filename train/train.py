@@ -37,6 +37,8 @@ def parse_args():
     # model parameters
     parser.add_argument('--maxlen', type=int, default=512, help="max length of source text")
     parser.add_argument('--max_target_len', type=int, default=128, help="max length of summary")
+    parser.add_argument('--train_datasize', type=int, default=20000, help="size of training data to use")
+    parser.add_argument('--valid_datasize', type=int, default=2000, help="size of validation data to use")
     # path configuration
     parser.add_argument('--data_dir', type=str, default=os.path.join(project_root, 'data', 'LCSTS_origin'), help="training data path")
     parser.add_argument("--save_dir", type=str, default=os.path.join(project_root, 'model_weights'), help="model weights save path")
@@ -73,8 +75,8 @@ def train(args):
     tokenizer = Tokenizer(dict_path, do_lower_case=True)
     # loading data
     print("Loading data...")
-    train_dataset = SummaryDataset(tokenizer, train_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, train_datasize=20, valid_datasize=2)
-    valid_dataset = SummaryDataset(tokenizer, valid_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, train_datasize=20, valid_datasize=2)
+    train_dataset = SummaryDataset(tokenizer, train_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, train_datasize=args.train_datasize)
+    valid_dataset = SummaryDataset(tokenizer, valid_data_path, maxlen=args.maxlen, max_target_len=args.max_target_len, valid_datasize=args.valid_datasize)
     train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, pin_memory=True, shuffle=True, collate_fn=collate_fn)
 
     # build model

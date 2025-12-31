@@ -17,7 +17,7 @@ config_path = os.path.join(checkpoint_dir, 'config.json')
 dict_path = os.path.join(checkpoint_dir, 'vocab.txt')
 
 # Define weight path
-weights_path = os.path.join(current_dir, 'model_weights', 'bart_epoch_10.pt')
+weights_path = os.path.join(current_dir, 'model_weights', 'bart_epoch_8.pt')
 
 # Hyperparameters
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -27,7 +27,7 @@ test_data_path = os.path.join(project_root, 'data', 'LCSTS_origin', 'my_test.jso
 output_save_path = os.path.join(project_root, 'results', 'test_predictions.jsonl')
 
 # specify the weight file to use
-weight_path = os.path.join(model_weights_dir, 'bart_epoch_10.pt')
+weight_path = os.path.join(model_weights_dir, 'bart_epoch_8.pt')
 
 # hyperparameters
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
