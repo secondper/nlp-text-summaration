@@ -153,8 +153,11 @@ NLP-Text-Summarization/          <-- 项目根目录
 3. 核心结果展示
    - 评估指标：使用 ROUGE-1 (Unigram), ROUGE-2 (Bigram), ROUGE-L (LCS) 评价摘要质量。
    - 可视化图表：
+
    <img src=".assets/experiment_comparison.png" alt="training-log" style="zoom: 33%;" />
+
    - 生成样例展示：
+   
    <img src=".assets/web_demo.png" alt="web_demo" style="zoom:50%;" />
 
 ## 七、 总结与展望
